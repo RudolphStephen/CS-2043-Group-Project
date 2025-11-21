@@ -1,0 +1,13 @@
+#BlueJ class context
+comment0.target=ListOfTestSuites
+comment1.params=
+comment1.target=ListOfTestSuites()
+comment2.params=
+comment2.target=java.util.List\ getSuites()
+comment3.params=suite
+comment3.target=void\ addSuite(TestSuite)
+comment4.params=suite
+comment4.target=void\ removeSuite(TestSuite)
+comment5.params=title
+comment5.target=TestSuite\ findSuiteByTitle(java.lang.String)
+numComments=6
