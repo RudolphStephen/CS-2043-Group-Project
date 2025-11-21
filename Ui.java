@@ -1,30 +1,26 @@
-import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
-import javafx.scene.control.ListView;   // ✔ Correct import
+import javafx.scene.control.ListView;
 import java.io.File;
 
-public class Ui extends Application
+public class Ui
 {
     private Coordinator coordinator;
     private Stage primaryStage;
 
-    @Override
-    public void start(Stage stage)
+    // Constructor receives the JavaFX Stage from Main
+    public Ui(Stage stage)
     {
         this.primaryStage = stage;
         this.coordinator = new Coordinator();
-
-        showWelcomeScreen();
-        primaryStage.setTitle("Submission 3 Tool");
-        primaryStage.show();
     }
 
-    // --- Welcome Screen ---
-    private void showWelcomeScreen()
+    // ------------------ UI SCREENS ------------------
+
+    public void showWelcomeScreen()
     {
         Label welcomeLabel = new Label("Welcome to Group 3's Submission 3");
         Button startButton = new Button("Start");
@@ -38,7 +34,7 @@ public class Ui extends Application
         primaryStage.setScene(scene);
     }
 
-    private void showFolderSelectionScreen()
+    public void showFolderSelectionScreen()
     {
         Label instructionLabel = new Label("Select or enter root folder for student submissions:");
         TextField pathField = new TextField();
@@ -47,7 +43,6 @@ public class Ui extends Application
         Button browseButton = new Button("Browse");
         Button proceedButton = new Button("Proceed");
 
-        // --- Error label ---
         Label errorLabel = new Label("Please select or enter a valid folder.");
         errorLabel.setStyle("-fx-text-fill: red;");
         errorLabel.setVisible(false);
@@ -55,8 +50,7 @@ public class Ui extends Application
         VBox layout = new VBox(15, instructionLabel, pathField, browseButton, proceedButton, errorLabel);
         layout.setStyle("-fx-padding: 50; -fx-alignment: center;");
 
-        browseButton.setOnAction(e ->
-        {
+        browseButton.setOnAction(e -> {
             DirectoryChooser chooser = new DirectoryChooser();
             chooser.setTitle("Select Root Folder");
             File selected = chooser.showDialog(primaryStage);
@@ -67,8 +61,7 @@ public class Ui extends Application
             }
         });
 
-        proceedButton.setOnAction(e ->
-        {
+        proceedButton.setOnAction(e -> {
             String path = pathField.getText();
             if (path != null && !path.isEmpty())
             {
@@ -76,7 +69,7 @@ public class Ui extends Application
                 if (folder.exists() && folder.isDirectory())
                 {
                     coordinator.setRootFolder(path);
-                    showTestSuiteManagementScreen(); // ✔ fixed method name
+                    showTestSuiteManagementScreen();
                 }
                 else
                 {
@@ -94,12 +87,10 @@ public class Ui extends Application
         primaryStage.setScene(new Scene(layout, 600, 400));
     }
 
-    // --- Test Suite Management Screen ---
-    private void showTestSuiteManagementScreen()
+    public void showTestSuiteManagementScreen()
     {
-        Coordinator coordinator = this.coordinator; // convenience
+        Coordinator coordinator = this.coordinator;
 
-        // --- Buttons ---
         Button createSuiteButton = new Button("Create New Suite");
         Button selectSuiteButton = new Button("Select Existing Suite");
 
@@ -125,28 +116,24 @@ public class Ui extends Application
 
         Scene scene = new Scene(layout, 600, 600);
 
-        // --- Button Actions ---
-        createSuiteButton.setOnAction(e ->
-        {
+        createSuiteButton.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog();
             dialog.setTitle("Create Test Suite");
             dialog.setHeaderText(null);
             dialog.setContentText("Enter Test Suite Title:");
-            dialog.showAndWait().ifPresent(title ->
-            {
+            dialog.showAndWait().ifPresent(title -> {
                 if (!title.isEmpty())
                 {
                     coordinator.createTestSuite(title);
                     testCaseList.getItems().clear();
-                    System.out.println("Test Suite created: " + title);
                 }
             });
         });
 
-        selectSuiteButton.setOnAction(e ->
-        {
+        selectSuiteButton.setOnAction(e -> {
             coordinator.loadTestSuite();
             testCaseList.getItems().clear();
+
             if (coordinator.getCurrentTestSuite() != null)
             {
                 for (TestCase tc : coordinator.getCurrentTestSuite().getTestCases())
@@ -156,8 +143,7 @@ public class Ui extends Application
             }
         });
 
-        addCaseButton.setOnAction(e ->
-        {
+        addCaseButton.setOnAction(e -> {
             TestCase tc = promptTestCase(null);
             if (tc != null)
             {
@@ -166,8 +152,7 @@ public class Ui extends Application
             }
         });
 
-        editCaseButton.setOnAction(e ->
-        {
+        editCaseButton.setOnAction(e -> {
             String selected = testCaseList.getSelectionModel().getSelectedItem();
             if (selected != null)
             {
@@ -184,14 +169,17 @@ public class Ui extends Application
                         tc.setTitle(edited.getTitle());
                         tc.setInputData(edited.getInputData());
                         tc.setExpectedOutput(edited.getExpectedOutput());
-                        testCaseList.getItems().set(testCaseList.getSelectionModel().getSelectedIndex(), edited.getTitle());
+
+                        testCaseList.getItems().set(
+                                testCaseList.getSelectionModel().getSelectedIndex(),
+                                edited.getTitle()
+                        );
                     }
                 }
             }
         });
 
-        removeCaseButton.setOnAction(e ->
-        {
+        removeCaseButton.setOnAction(e -> {
             String selected = testCaseList.getSelectionModel().getSelectedItem();
             if (selected != null)
             {
@@ -199,6 +187,7 @@ public class Ui extends Application
                         .filter(t -> t.getTitle().equals(selected))
                         .findFirst()
                         .orElse(null);
+
                 if (tc != null)
                 {
                     coordinator.getCurrentTestSuite().removeTestCase(tc);
@@ -207,38 +196,28 @@ public class Ui extends Application
             }
         });
 
-        doneButton.setOnAction(e ->
-        {
-            System.out.println("Test Suite finalized: " + coordinator.getCurrentTestSuite().getTitle());
+        doneButton.setOnAction(e -> {
+            System.out.println("Test Suite finalized: " +
+                    coordinator.getCurrentTestSuite().getTitle());
         });
 
         primaryStage.setScene(scene);
     }
 
-    // --- Prompt for Adding / Editing Test Case ---
     private TestCase promptTestCase(TestCase existing)
     {
         Dialog<TestCase> dialog = new Dialog<>();
         dialog.setTitle(existing == null ? "Add Test Case" : "Edit Test Case");
 
-        // --- Buttons ---
         ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
 
-        // --- Fields ---
         TextField titleField = new TextField();
-        titleField.setPromptText("Title");
-
         TextField inputField = new TextField();
-        inputField.setPromptText("Input Data");
-
         TextField expectedField = new TextField();
-        expectedField.setPromptText("Expected Output");
 
-        // --- Type selection ---
         ComboBox<String> typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll("Boolean", "Int", "Double", "String");
-        typeCombo.setPromptText("Select Type");
 
         if (existing != null)
         {
@@ -256,9 +235,8 @@ public class Ui extends Application
         );
         dialog.getDialogPane().setContent(content);
 
-        dialog.setResultConverter(dialogButton ->
-        {
-            if (dialogButton == okButtonType)
+        dialog.setResultConverter(button -> {
+            if (button == okButtonType)
             {
                 return new TestCase(
                         titleField.getText(),
