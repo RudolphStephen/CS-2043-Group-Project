@@ -5,6 +5,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.scene.control.ListView;
 import java.io.File;
+import java.util.List;
 
 public class Ui
 {
@@ -91,30 +92,94 @@ public class Ui
     {
         Coordinator coordinator = this.coordinator;
 
+        Label saveFolderLabel = new Label("Save Folder: Not set");
+        Button browseSaveFolderButton = new Button("Browse Save Folder");
         Button createSuiteButton = new Button("Create New Suite");
         Button selectSuiteButton = new Button("Select Existing Suite");
+        Button createCaseButton = new Button("Create New Test Case");
+        Button manageCasesButton = new Button("Manage Test Cases");
 
         ListView<String> testCaseList = new ListView<>();
-        Button addCaseButton = new Button("Add Test Case");
-        Button editCaseButton = new Button("Edit Selected Case");
-        Button removeCaseButton = new Button("Remove Selected Case");
+        Label suiteLabel = new Label("Selected Suite: None");
+        Button addCaseButton = new Button("Add Test Case to Suite");
+        Button removeCaseButton = new Button("Remove Test Case from Suite");
+        Button saveSuiteButton = new Button("Save Suite");
         Button doneButton = new Button("Done");
 
         VBox layout = new VBox(10,
+                saveFolderLabel,
+                browseSaveFolderButton,
+                new Separator(),
                 createSuiteButton,
                 selectSuiteButton,
+                new Separator(),
+                suiteLabel,
+                new Separator(),
+                createCaseButton,
+                manageCasesButton,
                 new Separator(),
                 new Label("Test Cases in Suite:"),
                 testCaseList,
                 new Separator(),
                 addCaseButton,
-                editCaseButton,
                 removeCaseButton,
+                saveSuiteButton,
                 doneButton
         );
         layout.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
-        Scene scene = new Scene(layout, 600, 600);
+        Scene scene = new Scene(layout, 600, 750);
+
+        // Update save folder label
+        Runnable updateSaveFolderLabel = () -> {
+            String saveFolder = coordinator.getSaveFolder();
+            if (saveFolder != null && !saveFolder.isEmpty())
+            {
+                saveFolderLabel.setText("Save Folder: " + saveFolder);
+            }
+            else
+            {
+                saveFolderLabel.setText("Save Folder: Not set");
+            }
+        };
+        updateSaveFolderLabel.run();
+
+        // Refresh the test case list for the current suite
+        Runnable refreshSuiteCaseList = () -> {
+            testCaseList.getItems().clear();
+            if (coordinator.getCurrentTestSuite() != null)
+            {
+                suiteLabel.setText("Selected Suite: " + coordinator.getCurrentTestSuite().getTitle());
+                for (String filename : coordinator.getCurrentTestSuite().getTestCaseFilenames())
+                {
+                    TestCase tc = coordinator.getTestCaseByFilename(filename);
+                    if (tc != null)
+                    {
+                        testCaseList.getItems().add(tc.getTitle() + " (" + filename + ")");
+                    }
+                    else
+                    {
+                        testCaseList.getItems().add(filename + " (not found)");
+                    }
+                }
+            }
+            else
+            {
+                suiteLabel.setText("Selected Suite: None");
+            }
+        };
+
+        browseSaveFolderButton.setOnAction(e -> {
+            DirectoryChooser chooser = new DirectoryChooser();
+            chooser.setTitle("Select Folder for Test Cases and Suites");
+            File selected = chooser.showDialog(primaryStage);
+            if (selected != null)
+            {
+                coordinator.setSaveFolder(selected.getAbsolutePath());
+                updateSaveFolderLabel.run();
+                refreshSuiteCaseList.run();
+            }
+        });
 
         createSuiteButton.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog();
@@ -125,83 +190,253 @@ public class Ui
                 if (!title.isEmpty())
                 {
                     coordinator.createTestSuite(title);
-                    testCaseList.getItems().clear();
+                    refreshSuiteCaseList.run();
                 }
             });
         });
 
         selectSuiteButton.setOnAction(e -> {
-            coordinator.loadTestSuite();
-            testCaseList.getItems().clear();
-
-            if (coordinator.getCurrentTestSuite() != null)
+            List<TestSuite> suites = coordinator.getAllTestSuites();
+            if (suites.isEmpty())
             {
-                for (TestCase tc : coordinator.getCurrentTestSuite().getTestCases())
-                {
-                    testCaseList.getItems().add(tc.getTitle());
-                }
+                showErrorDialog("No Suites Available", "No test suites found. Please create a test suite first or set the save folder.");
+                return;
             }
+
+            List<String> suiteTitles = new java.util.ArrayList<>();
+            for (TestSuite suite : suites)
+            {
+                suiteTitles.add(suite.getTitle());
+            }
+
+            ChoiceDialog<String> dialog = new ChoiceDialog<>(suiteTitles.get(0), suiteTitles);
+            dialog.setTitle("Select Test Suite");
+            dialog.setHeaderText(null);
+            dialog.setContentText("Select test suite:");
+            dialog.showAndWait().ifPresent(title -> {
+                TestSuite selectedSuite = coordinator.getListOfTestSuites().findSuiteByTitle(title);
+                if (selectedSuite != null)
+                {
+                    coordinator.setCurrentTestSuite(selectedSuite);
+                    refreshSuiteCaseList.run();
+                }
+            });
         });
 
-        addCaseButton.setOnAction(e -> {
+        createCaseButton.setOnAction(e -> {
             TestCase tc = promptTestCase(null);
             if (tc != null)
             {
-                coordinator.getCurrentTestSuite().addTestCase(tc);
-                testCaseList.getItems().add(tc.getTitle());
+                try
+                {
+                    coordinator.createAndSaveTestCase(tc);
+                    showInfoDialog("Test Case Created", "Test case '" + tc.getTitle() + "' has been created and saved.");
+                }
+                catch (Exception ex)
+                {
+                    showErrorDialog("Error", "Failed to save test case: " + ex.getMessage());
+                }
             }
         });
 
-        editCaseButton.setOnAction(e -> {
-            String selected = testCaseList.getSelectionModel().getSelectedItem();
-            if (selected != null)
+        manageCasesButton.setOnAction(e -> {
+            showTestCaseManagementScreen();
+        });
+
+        addCaseButton.setOnAction(e -> {
+            if (coordinator.getCurrentTestSuite() == null)
             {
-                TestCase tc = coordinator.getCurrentTestSuite().getTestCases().stream()
-                        .filter(t -> t.getTitle().equals(selected))
-                        .findFirst()
-                        .orElse(null);
-
-                if (tc != null)
-                {
-                    TestCase edited = promptTestCase(tc);
-                    if (edited != null)
-                    {
-                        tc.setTitle(edited.getTitle());
-                        tc.setInputData(edited.getInputData());
-                        tc.setExpectedOutput(edited.getExpectedOutput());
-
-                        testCaseList.getItems().set(
-                                testCaseList.getSelectionModel().getSelectedIndex(),
-                                edited.getTitle()
-                        );
-                    }
-                }
+                showErrorDialog("No Suite Selected", "Please create or select a test suite first.");
+                return;
             }
+
+            List<String> availableFilenames = coordinator.getAvailableTestCaseFilenames();
+            if (availableFilenames.isEmpty())
+            {
+                showErrorDialog("No Test Cases", "No test cases available. Please create a test case first.");
+                return;
+            }
+
+            ChoiceDialog<String> dialog = new ChoiceDialog<>(availableFilenames.get(0), availableFilenames);
+            dialog.setTitle("Add Test Case to Suite");
+            dialog.setHeaderText(null);
+            dialog.setContentText("Select test case to add:");
+            dialog.showAndWait().ifPresent(filename -> {
+                coordinator.getCurrentTestSuite().addTestCaseFilename(filename);
+                refreshSuiteCaseList.run();
+            });
         });
 
         removeCaseButton.setOnAction(e -> {
             String selected = testCaseList.getSelectionModel().getSelectedItem();
-            if (selected != null)
+            if (selected != null && coordinator.getCurrentTestSuite() != null)
             {
-                TestCase tc = coordinator.getCurrentTestSuite().getTestCases().stream()
-                        .filter(t -> t.getTitle().equals(selected))
-                        .findFirst()
-                        .orElse(null);
+                // Extract filename from the display string
+                String filename = extractFilenameFromDisplay(selected);
+                coordinator.getCurrentTestSuite().removeTestCaseFilename(filename);
+                refreshSuiteCaseList.run();
+            }
+        });
 
-                if (tc != null)
-                {
-                    coordinator.getCurrentTestSuite().removeTestCase(tc);
-                    testCaseList.getItems().remove(selected);
-                }
+        saveSuiteButton.setOnAction(e -> {
+            if (coordinator.getCurrentTestSuite() == null)
+            {
+                showErrorDialog("No Suite Selected", "Please create or select a test suite first.");
+                return;
+            }
+
+            try
+            {
+                coordinator.saveTestSuite(coordinator.getCurrentTestSuite());
+                showInfoDialog("Suite Saved", "Test suite '" + coordinator.getCurrentTestSuite().getTitle() + "' has been saved.");
+            }
+            catch (Exception ex)
+            {
+                showErrorDialog("Error", "Failed to save test suite: " + ex.getMessage());
             }
         });
 
         doneButton.setOnAction(e -> {
             System.out.println("Test Suite finalized: " +
-                    coordinator.getCurrentTestSuite().getTitle());
+                    (coordinator.getCurrentTestSuite() != null ? coordinator.getCurrentTestSuite().getTitle() : "none"));
         });
 
+        refreshSuiteCaseList.run();
         primaryStage.setScene(scene);
+    }
+
+    private void showTestCaseManagementScreen()
+    {
+        Coordinator coordinator = this.coordinator;
+
+        ListView<String> testCaseList = new ListView<>();
+        Button editCaseButton = new Button("Edit Selected Test Case");
+        Button deleteCaseButton = new Button("Delete Selected Test Case");
+        Button backButton = new Button("Back");
+
+        VBox layout = new VBox(10,
+                new Label("All Test Cases:"),
+                testCaseList,
+                new Separator(),
+                editCaseButton,
+                deleteCaseButton,
+                backButton
+        );
+        layout.setStyle("-fx-padding: 20; -fx-alignment: center;");
+
+        Scene scene = new Scene(layout, 600, 500);
+
+        Runnable refreshCaseList = () -> {
+            testCaseList.getItems().clear();
+            for (TestCase tc : coordinator.getListOfTestCases().getTestCases())
+            {
+                testCaseList.getItems().add(tc.getTitle() + " (" + tc.getFilename() + ")");
+            }
+        };
+
+        editCaseButton.setOnAction(e -> {
+            String selected = testCaseList.getSelectionModel().getSelectedItem();
+            if (selected != null)
+            {
+                String filename = extractFilenameFromDisplay(selected);
+                TestCase tc = coordinator.getTestCaseByFilename(filename);
+                if (tc != null)
+                {
+                    TestCase edited = promptTestCase(tc);
+                    if (edited != null)
+                    {
+                        try
+                        {
+                            // Update the test case
+                            tc.setTitle(edited.getTitle());
+                            tc.setInputData(edited.getInputData());
+                            tc.setExpectedOutput(edited.getExpectedOutput());
+                            tc.setType(edited.getType());
+                            
+                            // Save the updated test case
+                            coordinator.createAndSaveTestCase(tc);
+                            refreshCaseList.run();
+                            showInfoDialog("Test Case Updated", "Test case has been updated and saved.");
+                        }
+                        catch (Exception ex)
+                        {
+                            showErrorDialog("Error", "Failed to save test case: " + ex.getMessage());
+                        }
+                    }
+                }
+            }
+        });
+
+        deleteCaseButton.setOnAction(e -> {
+            String selected = testCaseList.getSelectionModel().getSelectedItem();
+            if (selected != null)
+            {
+                String filename = extractFilenameFromDisplay(selected);
+                TestCase tc = coordinator.getTestCaseByFilename(filename);
+                if (tc != null)
+                {
+                    // Remove from list
+                    coordinator.getListOfTestCases().removeTestCase(tc);
+                    
+                    // Delete file
+                    try
+                    {
+                        String saveFolder = coordinator.getSaveFolder();
+                        if (saveFolder != null && !saveFolder.isEmpty())
+                        {
+                            File testCaseFile = new File(new File(saveFolder, "test-cases"), filename);
+                            if (testCaseFile.exists())
+                            {
+                                testCaseFile.delete();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.err.println("Error deleting test case file: " + ex.getMessage());
+                    }
+                    
+                    refreshCaseList.run();
+                }
+            }
+        });
+
+        backButton.setOnAction(e -> {
+            showTestSuiteManagementScreen();
+        });
+
+        refreshCaseList.run();
+        primaryStage.setScene(scene);
+    }
+
+    private String extractFilenameFromDisplay(String displayString)
+    {
+        // Extract filename from display string like "Title (filename.testcase)"
+        int start = displayString.indexOf("(");
+        int end = displayString.indexOf(")");
+        if (start != -1 && end != -1 && end > start)
+        {
+            return displayString.substring(start + 1, end);
+        }
+        return displayString;
+    }
+
+    private void showInfoDialog(String title, String message)
+    {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showErrorDialog(String title, String message)
+    {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private TestCase promptTestCase(TestCase existing)
@@ -251,3 +486,4 @@ public class Ui
         return dialog.showAndWait().orElse(null);
     }
 }
+

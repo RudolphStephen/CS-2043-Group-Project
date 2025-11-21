@@ -1,0 +1,9 @@
+#BlueJ class context
+comment0.target=Program
+comment1.params=name\ sourceFile
+comment1.target=Program(java.lang.String,\ java.io.File)
+comment2.params=
+comment2.target=java.lang.String\ getName()
+comment3.params=
+comment3.target=java.io.File\ getSourceFile()
+numComments=4

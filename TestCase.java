@@ -1,3 +1,6 @@
+import java.io.*;
+import java.nio.file.Files;
+
 public class TestCase
 {
     private String title;
@@ -51,5 +54,53 @@ public class TestCase
     public void setType(String type)
     {
         this.type = type;
+    }
+
+    // Get the filename for this test case
+    public String getFilename()
+    {
+        return sanitizeFilename(title) + ".testcase";
+    }
+
+    // Save test case to a file
+    public void saveToFile(String rootFolder) throws IOException
+    {
+        File testCasesFolder = new File(rootFolder, "test-cases");
+        if (!testCasesFolder.exists())
+        {
+            testCasesFolder.mkdirs();
+        }
+
+        File testCaseFile = new File(testCasesFolder, getFilename());
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(testCaseFile)))
+        {
+            writer.println(title);
+            writer.println(type);
+            writer.println(inputData);
+            writer.println(expectedOutput);
+        }
+    }
+
+    // Load test case from a file
+    public static TestCase loadFromFile(File testCaseFile) throws IOException
+    {
+        java.util.List<String> lines = Files.readAllLines(testCaseFile.toPath());
+        if (lines.size() < 4)
+        {
+            throw new IOException("Invalid test case file format");
+        }
+
+        return new TestCase(
+            lines.get(0), // title
+            lines.get(2), // inputData
+            lines.get(3), // expectedOutput
+            lines.get(1)  // type
+        );
+    }
+
+    private String sanitizeFilename(String name)
+    {
+        return name.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 }
