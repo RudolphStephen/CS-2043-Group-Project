@@ -9,12 +9,14 @@ public class Coordinator
     private String saveFolder; // For saving test cases and suites
     private ListOfTestSuites listOfTestSuites;
     private ListOfTestCases listOfTestCases; // Global pool of test cases
+    private ListOfPrograms listOfPrograms; // List of student programs to test
     private TestSuite currentTestSuite;
 
     public Coordinator()
     {
         this.listOfTestSuites = new ListOfTestSuites();
         this.listOfTestCases = new ListOfTestCases();
+        this.listOfPrograms = new ListOfPrograms();
         this.currentTestSuite = null;
     }
 
@@ -189,5 +191,49 @@ public class Coordinator
             filenames.add(tc.getFilename());
         }
         return filenames;
+    }
+
+    // Method to execute a test suite on all student programs
+    // Loads programs from root folder, compiles and runs each with all test cases
+    // Returns a list of result strings in format "StudentName | TestCaseTitle | Status"
+    public List<String> executeTestSuite(String codePath) throws IOException
+    {
+        if (currentTestSuite == null)
+        {
+            throw new IOException("No test suite selected");
+        }
+        if (rootFolder == null || rootFolder.isEmpty())
+        {
+            throw new IOException("Root folder not set");
+        }
+
+        List<String> results = new ArrayList<>();
+        // Implementation will be added in subsequent commits
+        return results;
+    }
+
+    // Helper method to compile a Java program
+    // Returns true if compilation succeeds, false otherwise
+    private boolean compileProgram(Program program)
+    {
+        try
+        {
+            File sourceFile = program.getSourceFile();
+            File sourceDir = sourceFile.getParentFile();
+            
+            // Build javac command
+            ProcessBuilder pb = new ProcessBuilder("javac", sourceFile.getName());
+            pb.directory(sourceDir);
+            pb.redirectErrorStream(true);
+            
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            
+            return exitCode == 0;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
     }
 }
