@@ -102,6 +102,7 @@ public class Program
 
     // Execute a test case against this program
     // Returns a result string in format "StudentName | TestCaseTitle | Status"
+    // Also stores actual and expected output for later retrieval
     public String executeTestCase(TestCase testCase)
     {
         // Try to compile
@@ -109,6 +110,10 @@ public class Program
         
         if (!compiled)
         {
+            // Store expected output even for compile errors
+            String expectedOutput = testCase.getExpectedOutput();
+            expectedOutputs.put(testCase.getTitle(), expectedOutput);
+            actualOutputs.put(testCase.getTitle(), "");
             return name + " | " + testCase.getTitle() + " | COMPILE ERROR";
         }
         
@@ -119,6 +124,10 @@ public class Program
         // Compare outputs
         boolean passed = compareOutputs(actualOutput, expectedOutput, testCase.getType());
         String status = passed ? "PASSED" : "FAILED";
+        
+        // Store outputs for later retrieval, keyed by test case title
+        actualOutputs.put(testCase.getTitle(), actualOutput);
+        expectedOutputs.put(testCase.getTitle(), expectedOutput);
         
         return name + " | " + testCase.getTitle() + " | " + status;
     }
@@ -178,4 +187,19 @@ public class Program
         return actual.equals(expected);
     }
 
+    // Store execution outputs for UI retrieval, keyed by test case title
+    private java.util.Map<String, String> actualOutputs = new java.util.HashMap<>();
+    private java.util.Map<String, String> expectedOutputs = new java.util.HashMap<>();
+    
+    // Returns the actual output for a specific test case
+    public String getActualOutput(String testCaseTitle)
+    {
+        return actualOutputs.getOrDefault(testCaseTitle, "");
+    }
+    
+    // Returns the expected output for a specific test case
+    public String getExpectedOutput(String testCaseTitle)
+    {
+        return expectedOutputs.getOrDefault(testCaseTitle, "");
+    }
 }

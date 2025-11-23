@@ -286,7 +286,16 @@ public class Coordinator
     // Get actual and expected output for a specific student and test case
     public String[] getOutputsForComparison(String studentName, String testCaseTitle)
     {
-        // TODO: Implement output retrieval
+        for (Program program : lastExecutionPrograms)
+        {
+            if (program.getName().equals(studentName))
+            {
+                return new String[]{
+                    program.getExpectedOutput(testCaseTitle),
+                    program.getActualOutput(testCaseTitle)
+                };
+            }
+        }
         return new String[]{"", ""};
     }
 }
