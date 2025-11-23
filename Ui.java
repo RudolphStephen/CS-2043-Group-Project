@@ -678,10 +678,20 @@ public class Ui
 
         Scene scene = new Scene(layout, 1000, 700);
 
-        // Display actual results from execution
+        // Display actual results from execution with dividers between different students
+        String currentStudent = null;
         for (TestResult result : results)
         {
+            String studentName = result.getStudentName();
+            
+            // Add divider when student changes (skip for first student)
+            if (currentStudent != null && !currentStudent.equals(studentName))
+            {
+                resultsList.getItems().add("-----------------------------------");
+            }
+            
             resultsList.getItems().add(result.toDisplayString());
+            currentStudent = studentName;
         }
         
         // Store results for comparison screen access
@@ -689,17 +699,27 @@ public class Ui
         
         // Button action: Opens the side-by-side comparison screen for the selected result
         // Parses the result string to extract student name and test case title
-        // Result format is "StudentName | TestCaseTitle | Status"
+        // Result format is "StudentName | TestCaseTitle | Status" or "-----------------------------------" for dividers
         viewComparisonButton.setOnAction(e -> {
             String selected = resultsList.getSelectionModel().getSelectedItem();
-            if (selected != null)
+            if (selected != null && !selected.equals("-----------------------------------"))
             {
                 // Parse selected item to get student and test case
-                // Format: "StudentName | TestCaseTitle | Status"
+                // Format: "StudentName | TestCaseTitle | Status" or "StudentName | Status" for skipped
                 String[] parts = selected.split("\\|");
                 if (parts.length >= 2)
                 {
                     String studentName = parts[0].trim();
+                    
+                    // Check if this is a skipped entry (only 2 parts)
+                    if (parts.length == 2)
+                    {
+                        // Skipped entry - show message that comparison is not available
+                        showErrorDialog("No Comparison Available", "This entry was skipped (no main method found). Comparison is not available.");
+                        return;
+                    }
+                    
+                    // Normal entry with test case
                     String testCaseTitle = parts[1].trim();
                     
                     // Find the corresponding TestResult
