@@ -115,7 +115,7 @@ public class Ui
     {
         Coordinator coordinator = this.coordinator;
 
-        Label saveFolderLabel = new Label("Folder containing test-suites/ and test-cases: Not set");
+        Label saveFolderLabel = new Label("Folder containing test-suites/ and test-cases folders: Not set");
         saveFolderLabel.setStyle("-fx-text-fill: #E8E8F2; -fx-font-weight: 600;");
         Button browseSaveFolderButton = new Button("Browse Test Folders");
         Button createSuiteButton = new Button("Create New Suite");
