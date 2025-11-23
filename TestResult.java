@@ -2,7 +2,7 @@ public class TestResult
 {
     private String studentName;
     private String testCaseTitle;
-    private String status; // PASSED, FAILED, or COMPILE ERROR
+    private String status; // PASSED, FAILED, COMPILE ERROR, or RUNTIME ERROR
     private String actualOutput;
     private String expectedOutput;
 

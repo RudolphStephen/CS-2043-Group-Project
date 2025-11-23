@@ -796,8 +796,20 @@ public class Ui
         String actualOutput = result.getActualOutput();
         
         expectedArea.setText(expectedOutput != null ? expectedOutput : "");
-        actualArea.setText(actualOutput != null && !actualOutput.isEmpty() ? actualOutput : 
-            (result.getStatus().equals("COMPILE ERROR") ? "Compilation failed - no output available" : ""));
+        String status = result.getStatus();
+        if (status.equals("COMPILE ERROR"))
+        {
+            actualArea.setText("Compilation failed - no output available");
+        }
+        else if (status.equals("RUNTIME ERROR"))
+        {
+            actualArea.setText((actualOutput != null && !actualOutput.isEmpty() ? actualOutput : "") + 
+                "\n\n[Program exited with non-zero exit code]");
+        }
+        else
+        {
+            actualArea.setText(actualOutput != null ? actualOutput : "");
+        }
 
         backButton.setOnAction(e -> {
             // Always try to go back to results screen with stored results

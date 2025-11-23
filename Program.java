@@ -8,6 +8,7 @@ public class Program
     private String name; // Name of the student or submission folder
     private File sourceFile; // The Java source file associated with this program
     private Boolean compilationStatus = null; // null = not tried, true = compiled successfully, false = compilation failed
+    private Integer lastExitCode = null; // Exit code from last program execution
 
     // Constructor: initializes a Program object with a name and source file
     // Additional: Used to represent a student's submission in the grading system
@@ -90,8 +91,11 @@ public class Program
                 output.append(line);
             }
             
-            process.waitFor();
+            int exitCode = process.waitFor();
             reader.close();
+            
+            // Store exit code for runtime error detection
+            lastExitCode = exitCode;
             
             return output.toString();
         }
@@ -136,9 +140,17 @@ public class Program
             // Run the program with test case input
             actualOutput = run(testCase.getInputData());
             
-            // Compare outputs
-            boolean passed = compareOutputs(actualOutput, expectedOutput, testCase.getType());
-            status = passed ? "PASSED" : "FAILED";
+            // Check for runtime errors (non-zero exit code)
+            if (lastExitCode != null && lastExitCode != 0)
+            {
+                status = "RUNTIME ERROR";
+            }
+            else
+            {
+                // Compare outputs
+                boolean passed = compareOutputs(actualOutput, expectedOutput, testCase.getType());
+                status = passed ? "PASSED" : "FAILED";
+            }
         }
         
         return new TestResult(name, testCase.getTitle(), status, actualOutput, expectedOutput);
