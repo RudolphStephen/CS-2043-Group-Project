@@ -137,9 +137,7 @@ public class Ui
         Button saveSuiteButton = new Button("Save Suite");
         Button executeSuiteButton = new Button("Execute Test Suite");
         Button backToStartButton = new Button("Back to Start");
-        Button doneButton = new Button("Done");
-
-        Button[] otherButtons = {addCaseButton, removeCaseButton, saveSuiteButton, executeSuiteButton, backToStartButton, doneButton};
+        Button[] otherButtons = {addCaseButton, removeCaseButton, saveSuiteButton, executeSuiteButton, backToStartButton};
         for (Button b : otherButtons) {
             styleButton(b);
         }
@@ -164,8 +162,7 @@ public class Ui
                 saveSuiteButton,
                 executeSuiteButton,
                 new Separator(),
-                backToStartButton,
-                doneButton
+                backToStartButton
         );
 
         // style labels inside the layout (header & list label)
@@ -390,10 +387,6 @@ public class Ui
             showWelcomeScreen();
         });
 
-        doneButton.setOnAction(e -> {
-            System.out.println("Test Suite finalized: " +
-                    (coordinator.getCurrentTestSuite() != null ? coordinator.getCurrentTestSuite().getTitle() : "none"));
-        });
 
         refreshSuiteCaseList.run();
         primaryStage.setScene(scene);
@@ -560,12 +553,21 @@ public class Ui
 
     // Helper method to display an error dialog to the user
     // Shows a popup with the given title and error message, user must click OK to dismiss
+    // Uses expandable content area for long messages to prevent text cutoff
     private void showErrorDialog(String title, String message)
     {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        
+        // Make the dialog expandable for long messages
+        alert.getDialogPane().setExpandableContent(new javafx.scene.control.TextArea(message));
+        alert.getDialogPane().setExpanded(true);
+        
+        // Set a minimum width to prevent cutoff
+        alert.getDialogPane().setMinWidth(500);
+        
         alert.showAndWait();
     }
 
