@@ -268,19 +268,19 @@ public class Coordinator
 
         List<TestResult> results = new ArrayList<>();
         
-        // Load all student programs from root folder/programs/ subfolder (case-insensitive)
+        // Load all student programs from root folder (which directly contains student submission folders)
         File rootFolderFile = new File(rootFolder);
-        File programsFolder = findFolderCaseInsensitive(rootFolderFile, "programs");
-        if (programsFolder == null)
+        if (!rootFolderFile.exists() || !rootFolderFile.isDirectory())
         {
-            throw new IOException("No 'programs' folder found in root folder. Please check that the root folder contains a 'programs' subfolder (case-insensitive) with student submission folders.");
+            throw new IOException("Root folder does not exist or is not a directory: " + rootFolder);
         }
-        listOfPrograms.loadFromRootFolder(programsFolder, codePath);
+        
+        listOfPrograms.loadFromRootFolder(rootFolderFile, codePath);
         
         // Check if any programs were found
         if (listOfPrograms.getPrograms().isEmpty())
         {
-            throw new IOException("No student programs found in programs/ folder. Please check that the root folder contains a 'programs' subfolder with student submission folders.");
+            throw new IOException("No student programs found in root folder. Please check that the root folder contains student submission subfolders, each with a Java file containing a main method.");
         }
         
         // Get all test cases in the current suite
