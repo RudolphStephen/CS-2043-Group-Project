@@ -247,6 +247,12 @@ public class Coordinator
         File rootFolderFile = new File(rootFolder);
         listOfPrograms.loadFromRootFolder(rootFolderFile, codePath);
         
+        // Check if any programs were found
+        if (listOfPrograms.getPrograms().isEmpty())
+        {
+            throw new IOException("No student programs found in root folder. Please check the root folder path and code path.");
+        }
+        
         // Get all test cases in the current suite
         List<TestCase> testCases = new ArrayList<>();
         for (String filename : currentTestSuite.getTestCaseFilenames())
@@ -256,6 +262,12 @@ public class Coordinator
             {
                 testCases.add(tc);
             }
+        }
+        
+        // Check if any test cases were found
+        if (testCases.isEmpty())
+        {
+            throw new IOException("No test cases found in the selected test suite. Please add test cases to the suite first.");
         }
         
         // For each program, test with each test case

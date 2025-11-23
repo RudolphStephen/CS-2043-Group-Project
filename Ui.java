@@ -377,6 +377,12 @@ public class Ui
                 showErrorDialog("Root Folder Not Set", "Please set the root folder for student submissions first.");
                 return;
             }
+            // Check if suite has any test cases
+            if (coordinator.getCurrentTestSuite().getTestCaseFilenames().isEmpty())
+            {
+                showErrorDialog("Empty Test Suite", "The selected test suite has no test cases. Please add test cases to the suite before executing.");
+                return;
+            }
             showExecuteTestSuiteScreen();
         });
 
