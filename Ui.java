@@ -160,8 +160,8 @@ public class Ui
                 addCaseButton,
                 removeCaseButton,
                 saveSuiteButton,
-                executeSuiteButton,
                 new Separator(),
+                executeSuiteButton,
                 backToStartButton
         );
 
