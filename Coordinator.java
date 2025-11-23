@@ -243,14 +243,15 @@ public class Coordinator
 
         List<TestResult> results = new ArrayList<>();
         
-        // Load all student programs from root folder
+        // Load all student programs from root folder/programs/ subfolder
         File rootFolderFile = new File(rootFolder);
-        listOfPrograms.loadFromRootFolder(rootFolderFile, codePath);
+        File programsFolder = new File(rootFolderFile, "programs");
+        listOfPrograms.loadFromRootFolder(programsFolder, codePath);
         
         // Check if any programs were found
         if (listOfPrograms.getPrograms().isEmpty())
         {
-            throw new IOException("No student programs found in root folder. Please check the root folder path and code path.");
+            throw new IOException("No student programs found in programs/ folder. Please check that the root folder contains a 'programs' subfolder with student submission folders.");
         }
         
         // Get all test cases in the current suite
