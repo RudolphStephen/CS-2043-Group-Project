@@ -229,8 +229,8 @@ public class Coordinator
 
     // Method to execute a test suite on all student programs
     // Loads programs from root folder, coordinates execution
-    // Returns a list of result strings in format "StudentName | TestCaseTitle | Status"
-    public List<String> executeTestSuite(String codePath) throws IOException
+    // Returns a list of TestResult objects containing execution results
+    public List<TestResult> executeTestSuite(String codePath) throws IOException
     {
         if (currentTestSuite == null)
         {
@@ -241,7 +241,7 @@ public class Coordinator
             throw new IOException("Root folder not set");
         }
 
-        List<String> results = new ArrayList<>();
+        List<TestResult> results = new ArrayList<>();
         
         // Load all student programs from root folder
         File rootFolderFile = new File(rootFolder);
@@ -264,38 +264,36 @@ public class Coordinator
             for (TestCase testCase : testCases)
             {
                 // Delegate execution to Program class
-                String result = program.executeTestCase(testCase);
+                TestResult result = program.executeTestCase(testCase);
                 results.add(result);
             }
         }
         
-        // Store programs and test cases for UI to retrieve outputs later
-        lastExecutionPrograms = new ArrayList<>(listOfPrograms.getPrograms());
-        lastExecutionTestCases = testCases;
+        // Store results for UI retrieval
+        lastExecutionResults = results;
         
         return results;
     }
 
-    // Store last execution data for UI retrieval
-    private List<Program> lastExecutionPrograms = new ArrayList<>();
-    private List<TestCase> lastExecutionTestCases = new ArrayList<>();
+    // Store last execution results for UI retrieval
+    private List<TestResult> lastExecutionResults = new ArrayList<>();
     
-    public List<Program> getLastExecutionPrograms() { return lastExecutionPrograms; }
-    public List<TestCase> getLastExecutionTestCases() { return lastExecutionTestCases; }
-    
-    // Get actual and expected output for a specific student and test case
-    public String[] getOutputsForComparison(String studentName, String testCaseTitle)
+    public List<TestResult> getLastExecutionResults()
     {
-        for (Program program : lastExecutionPrograms)
+        return lastExecutionResults;
+    }
+    
+    // Get a specific test result by student name and test case title
+    public TestResult getTestResult(String studentName, String testCaseTitle)
+    {
+        for (TestResult result : lastExecutionResults)
         {
-            if (program.getName().equals(studentName))
+            if (result.getStudentName().equals(studentName) && 
+                result.getTestCaseTitle().equals(testCaseTitle))
             {
-                return new String[]{
-                    program.getExpectedOutput(testCaseTitle),
-                    program.getActualOutput(testCaseTitle)
-                };
+                return result;
             }
         }
-        return new String[]{"", ""};
+        return null;
     }
 }

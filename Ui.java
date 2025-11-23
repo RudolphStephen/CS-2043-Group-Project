@@ -610,7 +610,7 @@ public class Ui
             try
             {
                 // Execute the test suite and get results
-                List<String> results = coordinator.executeTestSuite(codePath);
+                List<TestResult> results = coordinator.executeTestSuite(codePath);
                 showResultsScreen(results);
             }
             catch (Exception ex)
@@ -629,7 +629,7 @@ public class Ui
     // Method to display the test execution results screen
     // Shows a list of all students with their test case results (PASSED/FAILED/COMPILE ERROR)
     // User can select a result to view detailed side-by-side comparison
-    private void showResultsScreen(List<String> results)
+    private void showResultsScreen(List<TestResult> results)
     {
         Coordinator coordinator = this.coordinator;
         TestSuite suite = coordinator.getCurrentTestSuite();
@@ -670,10 +670,13 @@ public class Ui
         Scene scene = new Scene(layout, 1000, 700);
 
         // Display actual results from execution
-        for (String result : results)
+        for (TestResult result : results)
         {
-            resultsList.getItems().add(result);
+            resultsList.getItems().add(result.toDisplayString());
         }
+        
+        // Store results for comparison screen access
+        final List<TestResult> resultsForComparison = new java.util.ArrayList<>(results);
         
         // Button action: Opens the side-by-side comparison screen for the selected result
         // Parses the result string to extract student name and test case title
@@ -689,7 +692,27 @@ public class Ui
                 {
                     String studentName = parts[0].trim();
                     String testCaseTitle = parts[1].trim();
-                    showComparisonScreen(studentName, testCaseTitle);
+                    
+                    // Find the corresponding TestResult
+                    TestResult result = null;
+                    for (TestResult r : resultsForComparison)
+                    {
+                        if (r.getStudentName().equals(studentName) && 
+                            r.getTestCaseTitle().equals(testCaseTitle))
+                        {
+                            result = r;
+                            break;
+                        }
+                    }
+                    
+                    if (result != null)
+                    {
+                        showComparisonScreen(result);
+                    }
+                    else
+                    {
+                        showErrorDialog("Result Not Found", "Could not find result data.");
+                    }
                 }
                 else
                 {
@@ -716,11 +739,11 @@ public class Ui
     // Method to display the side-by-side comparison screen
     // Shows expected output (from test case) and actual output (from program execution) side by side
     // Allows user to visually compare what was expected vs what the program actually produced
-    private void showComparisonScreen(String studentName, String testCaseTitle)
+    private void showComparisonScreen(TestResult result)
     {
         Coordinator coordinator = this.coordinator;
 
-        Label titleLabel = new Label("Comparison: " + studentName + " - " + testCaseTitle);
+        Label titleLabel = new Label("Comparison: " + result.getStudentName() + " - " + result.getTestCaseTitle());
         titleLabel.setStyle("-fx-text-fill: #E8E8F2; -fx-font-weight: 600; -fx-font-size: 18;");
 
         TextArea expectedArea = new TextArea();
@@ -768,19 +791,25 @@ public class Ui
 
         Scene scene = new Scene(layout, 1100, 600);
 
-        // Get outputs from coordinator
-        String[] outputs = coordinator.getOutputsForComparison(studentName, testCaseTitle);
-        String expectedOutput = outputs[0];
-        String actualOutput = outputs[1];
+        // Display actual output data from TestResult
+        String expectedOutput = result.getExpectedOutput();
+        String actualOutput = result.getActualOutput();
         
-        // Display actual output data
         expectedArea.setText(expectedOutput != null ? expectedOutput : "");
         actualArea.setText(actualOutput != null && !actualOutput.isEmpty() ? actualOutput : 
-            "Compilation failed - no output available");
+            (result.getStatus().equals("COMPILE ERROR") ? "Compilation failed - no output available" : ""));
 
         backButton.setOnAction(e -> {
-            // Re-execute to get results again, or go back to execution screen
-            showExecuteTestSuiteScreen();
+            // Re-display results screen with stored results
+            List<TestResult> storedResults = coordinator.getLastExecutionResults();
+            if (storedResults != null && !storedResults.isEmpty())
+            {
+                showResultsScreen(storedResults);
+            }
+            else
+            {
+                showExecuteTestSuiteScreen();
+            }
         });
 
         restartButton.setOnAction(e -> {

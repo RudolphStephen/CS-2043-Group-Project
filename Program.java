@@ -101,35 +101,31 @@ public class Program
     }
 
     // Execute a test case against this program
-    // Returns a result string in format "StudentName | TestCaseTitle | Status"
-    // Also stores actual and expected output for later retrieval
-    public String executeTestCase(TestCase testCase)
+    // Returns a TestResult object containing execution results
+    public TestResult executeTestCase(TestCase testCase)
     {
         // Try to compile
         boolean compiled = compile();
         
+        String expectedOutput = testCase.getExpectedOutput();
+        String actualOutput = "";
+        String status;
+        
         if (!compiled)
         {
-            // Store expected output even for compile errors
-            String expectedOutput = testCase.getExpectedOutput();
-            expectedOutputs.put(testCase.getTitle(), expectedOutput);
-            actualOutputs.put(testCase.getTitle(), "");
-            return name + " | " + testCase.getTitle() + " | COMPILE ERROR";
+            status = "COMPILE ERROR";
+        }
+        else
+        {
+            // Run the program with test case input
+            actualOutput = run(testCase.getInputData());
+            
+            // Compare outputs
+            boolean passed = compareOutputs(actualOutput, expectedOutput, testCase.getType());
+            status = passed ? "PASSED" : "FAILED";
         }
         
-        // Run the program with test case input
-        String actualOutput = run(testCase.getInputData());
-        String expectedOutput = testCase.getExpectedOutput();
-        
-        // Compare outputs
-        boolean passed = compareOutputs(actualOutput, expectedOutput, testCase.getType());
-        String status = passed ? "PASSED" : "FAILED";
-        
-        // Store outputs for later retrieval, keyed by test case title
-        actualOutputs.put(testCase.getTitle(), actualOutput);
-        expectedOutputs.put(testCase.getTitle(), expectedOutput);
-        
-        return name + " | " + testCase.getTitle() + " | " + status;
+        return new TestResult(name, testCase.getTitle(), status, actualOutput, expectedOutput);
     }
 
     // Helper method to compare actual output with expected output
@@ -187,19 +183,4 @@ public class Program
         return actual.equals(expected);
     }
 
-    // Store execution outputs for UI retrieval, keyed by test case title
-    private java.util.Map<String, String> actualOutputs = new java.util.HashMap<>();
-    private java.util.Map<String, String> expectedOutputs = new java.util.HashMap<>();
-    
-    // Returns the actual output for a specific test case
-    public String getActualOutput(String testCaseTitle)
-    {
-        return actualOutputs.getOrDefault(testCaseTitle, "");
-    }
-    
-    // Returns the expected output for a specific test case
-    public String getExpectedOutput(String testCaseTitle)
-    {
-        return expectedOutputs.getOrDefault(testCaseTitle, "");
-    }
 }
